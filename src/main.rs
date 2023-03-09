@@ -98,7 +98,12 @@ fn tokenize_line(s: &str, state: &mut ProgState) /* -> Vec<u8>  */{
 
             b'^' => state.two_operands_op(|a, b| Ok(a.pow(b as u32))),
 
+            b'.' => println!("change num to float"),
+            b'~' => println!("negate the number"),
+
             b'f' => state.print_stack(),
+
+            b'q' => std::process::exit(0),
             _ => continue,
         }
     }
