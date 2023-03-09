@@ -81,24 +81,22 @@ fn tokenize_line(s: &str, state: &mut ProgState) /* -> Vec<u8>  */{
 
             // b'A' ..= b'F' => println!("Hex Num: {c}"),
 
-            b'+' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    eprintln!("Stack empty");
-                    continue;
-                }
-                let a = state.stack[len - 1];
-                let b = state.stack[len - 2];
-                state.stack.pop();
-                state.stack.pop();
-                state.stack.push(a+b);
-            }
 
-            b'-' => println!("Sub"),
-            b'*' => println!("Mul"),
-            b'/' => println!("Div"),
-            b'%' => println!("Rem"),
-            b'^' => println!("Pow"),
+            b'+' => state.two_operands_op(|a, b| Ok(a + b)),
+            b'-' => state.two_operands_op(|a, b| Ok(a - b)),
+            b'*' => state.two_operands_op(|a, b| Ok(a * b)),
+            b'/' => state.two_operands_op(|a, b| {
+                    if b == 0 {
+                        Err(ArithmeticErr::DivideByZero)
+                    } else { Ok(a / b) }
+                }),
+            b'%' => state.two_operands_op(|a, b| {
+                    if b == 0 {
+                        Err(ArithmeticErr::DivideByZero)
+                    } else { Ok(a % b) }
+                }),
+
+            b'^' => state.two_operands_op(|a, b| Ok(a.pow(b as u32))),
 
             b'f' => state.print_stack(),
             _ => continue,
