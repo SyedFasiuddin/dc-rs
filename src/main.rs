@@ -14,11 +14,9 @@ impl ProgState {
     }
 
     fn print_stack(&self) {
-        println!("Print start");
-        for i in &self.stack {
-            println!("print stack: {i}");
+        for i in self.stack.iter().rev() {
+            println!("{i}");
         }
-        println!("Print complete");
     }
 }
 
