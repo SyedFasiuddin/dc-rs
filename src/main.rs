@@ -49,38 +49,34 @@ impl ProgState {
 fn tokenize_line(s: &str, state: &mut ProgState) /* -> Vec<u8>  */{
     // let v = Vec::new();
     for c in s.bytes() {
-        match c {
-            b'\n' | b'\t' | b'\r' | b' ' => {
-                println!("Do nothing");
-                state.curr_num = None;
+        if c >= b'0' && c <= b'9' {
+            if state.curr_num.is_none() {
+                state.curr_num = Some(0);
             }
 
-            b'0' ..=b'9' => {
-                println!("Parsing number: {c}");
-                let num = match (c as char).to_string().parse::<i64>() {
-                    Ok(v) => Some(v),
-                    Err(_) => {
-                        eprintln!("Cannot parse number");
-                        None
-                    },
-                };
+            let num = match (c as char).to_string().parse::<i64>() {
+                Ok(num) => Some(num),
+                Err(_) => {
+                    eprintln!("Cannot parse number");
+                    None
+                },
+            };
 
-                if let Some(num) = num {
-                    if state.curr_num.is_none() {
-                        state.stack.push(num);
-                        state.curr_num = Some(0);
-                        continue;
-                    }
-                    if let Some(mut v) = state.stack.pop() {
-                        v *= 10;
-                        v += num;
-                        state.stack.push(v);
-                    }
-                }
-            },
+            state.curr_num = Some(
+                state.curr_num.as_ref().unwrap() * 10 + num.unwrap()
+            );
+
+            continue;
+        };
+
+        if let Some(num) = state.curr_num {
+            state.stack.push(num);
+        }
+
+        match c {
+            b'\n' | b'\t' | b'\r' | b' ' => state.curr_num = None,
 
             // b'A' ..= b'F' => println!("Hex Num: {c}"),
-
 
             b'+' => state.two_operands_op(|a, b| Ok(a + b)),
             b'-' => state.two_operands_op(|a, b| Ok(a - b)),
