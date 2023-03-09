@@ -4,6 +4,11 @@ struct ProgState {
     curr_num: Option<i64>,
 }
 
+#[derive(Debug)]
+enum ArithmeticErr {
+    DivideByZero,
+}
+
 impl ProgState {
     fn new(s: &str) -> ProgState {
         ProgState {
@@ -16,6 +21,27 @@ impl ProgState {
     fn print_stack(&self) {
         for i in self.stack.iter().rev() {
             println!("{i}");
+        }
+    }
+
+    fn two_operands_op<F>(&mut self, f: F)
+        where F: FnOnce(i64, i64) -> Result<i64, ArithmeticErr>
+    {
+        let len = self.stack.len();
+        if len < 2 {
+            eprintln!("{} stack empty", self.prog_name);
+            return;
+        }
+        let a = self.stack[len - 2];
+        let b = self.stack[len - 1];
+
+        match f(a, b) {
+            Ok(x) => {
+                self.stack.pop();
+                self.stack.pop();
+                self.stack.push(x);
+            },
+            Err(ArithmeticErr::DivideByZero) => eprintln!("{} divide by zero", self.prog_name),
         }
     }
 }
