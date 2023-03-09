@@ -1,11 +1,16 @@
 struct ProgState {
+    prog_name: String,
     stack: Vec<i64>,
     curr_num: Option<i64>,
 }
 
 impl ProgState {
-    fn new() -> ProgState {
-        ProgState { stack: Vec::new(), curr_num: Option::None }
+    fn new(s: &str) -> ProgState {
+        ProgState {
+            prog_name: s.to_string(),
+            stack: Vec::new(),
+            curr_num: Option::None
+        }
     }
 
     fn print_stack(&self) {
@@ -85,8 +90,10 @@ fn tokenize_line(s: &str, state: &mut ProgState) /* -> Vec<u8>  */{
 fn main() {
 
     // loop_over_input(&mut std::io::stdin().lock());
+
+    let args: Vec<String> = std::env::args().collect();
     let mut line_buf: String;
-    let mut state = ProgState::new();
+    let mut state = ProgState::new(&args[0][..]);
 
     loop {
         line_buf = "".to_string();
