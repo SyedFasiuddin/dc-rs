@@ -1,7 +1,7 @@
 struct ProgState {
     prog_name: String,
-    stack: Vec<i64>,
-    curr_num: Option<i64>,
+    stack: Vec<f64>,
+    curr_num: Option<f64>,
 }
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ impl ProgState {
     }
 
     fn two_operands_op<F>(&mut self, f: F)
-        where F: FnOnce(i64, i64) -> Result<i64, ArithmeticErr>
+        where F: FnOnce(f64, f64) -> Result<f64, ArithmeticErr>
     {
         let len = self.stack.len();
         if len < 2 {
@@ -50,10 +50,10 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
     for c in s.bytes() {
         if c >= b'0' && c <= b'9' {
             if state.curr_num.is_none() {
-                state.curr_num = Some(0);
+                state.curr_num = Some(0.0);
             }
 
-            let num = match (c as char).to_string().parse::<i64>() {
+            let num = match (c as char).to_string().parse::<f64>() {
                 Ok(num) => Some(num),
                 Err(_) => {
                     eprintln!("Cannot parse number");
@@ -62,7 +62,7 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             };
 
             state.curr_num = Some(
-                state.curr_num.as_ref().unwrap() * 10 + num.unwrap()
+                state.curr_num.as_ref().unwrap() * 10.0 + num.unwrap()
             );
 
             continue;
@@ -82,23 +82,23 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             b'-' => state.two_operands_op(|a, b| Ok(a - b)),
             b'*' => state.two_operands_op(|a, b| Ok(a * b)),
             b'/' => state.two_operands_op(|a, b| {
-                    if b == 0 {
+                    if b == 0.0 {
                         Err(ArithmeticErr::DivideByZero)
                     } else { Ok(a / b) }
                 }),
             b'%' => state.two_operands_op(|a, b| {
-                    if b == 0 {
+                    if b == 0.0 {
                         Err(ArithmeticErr::DivideByZero)
                     } else { Ok(a % b) }
                 }),
 
-            b'^' => state.two_operands_op(|a, b| Ok(a.pow(b as u32))),
+            b'^' => state.two_operands_op(|a, b| Ok(a.powf(b))),
 
             b'.' => eprintln!("floating point numbers not supported"),
 
             b'~' | b'_' => {
                 match state.stack.pop() {
-                    Some(num) => state.stack.push(num * -1),
+                    Some(num) => state.stack.push(num * -1.0),
                     None => eprintln!("stack is empty"),
                 }
             },
