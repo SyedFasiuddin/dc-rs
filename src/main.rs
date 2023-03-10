@@ -1,7 +1,6 @@
 struct ProgState {
     prog_name: String,
     stack: Vec<f64>,
-    curr_num: Option<f64>,
 }
 
 #[derive(Debug)]
@@ -14,7 +13,6 @@ impl ProgState {
         ProgState {
             prog_name: s.to_string(),
             stack: Vec::new(),
-            curr_num: Option::None
         }
     }
 
@@ -47,34 +45,29 @@ impl ProgState {
 }
 
 fn tokenize_line(s: &str, state: &mut ProgState) {
+    let mut number = String::new();
+    let mut have_number_to_parse = false;
+
     for c in s.bytes() {
-        if c >= b'0' && c <= b'9' {
-            if state.curr_num.is_none() {
-                state.curr_num = Some(0.0);
-            }
-
-            let num = match (c as char).to_string().parse::<f64>() {
-                Ok(num) => Some(num),
-                Err(_) => {
-                    eprintln!("Cannot parse number");
-                    None
-                },
-            };
-
-            state.curr_num = Some(
-                state.curr_num.as_ref().unwrap() * 10.0 + num.unwrap()
-            );
-
+        if c >= b'0' && c <= b'9' || c == b'.' {
+            number += &(c as char).to_string();
+            have_number_to_parse = true;
             continue;
-        };
+        }
 
-        if let Some(num) = state.curr_num {
-            state.stack.push(num);
-            state.curr_num = None;
+        if have_number_to_parse {
+            match number.parse::<f64>() {
+                Ok(parsed_float) => {
+                    state.stack.push(parsed_float);
+                    number = String::new();
+                }
+                Err(e) => eprintln!("Cannot parse number: {e}"),
+            };
+            have_number_to_parse = false;
         }
 
         match c {
-            b'\n' | b'\t' | b'\r' | b' ' => state.curr_num = None,
+            b'\n' | b'\t' | b'\r' | b' ' => continue,
 
             // b'A' ..= b'F' => println!("Hex Num: {c}"),
 
@@ -93,8 +86,6 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }),
 
             b'^' => state.two_operands_op(|a, b| Ok(a.powf(b))),
-
-            b'.' => eprintln!("floating point numbers not supported"),
 
             b'~' | b'_' => {
                 match state.stack.pop() {
