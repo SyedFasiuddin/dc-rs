@@ -95,7 +95,13 @@ fn tokenize_line(s: &str, state: &mut ProgState) /* -> Vec<u8>  */{
             b'^' => state.two_operands_op(|a, b| Ok(a.pow(b as u32))),
 
             b'.' => println!("change num to float"),
-            b'~' => println!("negate the number"),
+
+            b'~' | b'_' => {
+                match state.stack.pop() {
+                    Some(num) => state.stack.push(num * -1),
+                    None => eprintln!("stack is empty"),
+                }
+            },
 
             b'f' => state.print_stack(),
 
