@@ -56,6 +56,25 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
         }
 
         if have_number_to_parse {
+            if c == b'e' || c == b'E' {
+                number += &(c as char).to_string();
+                continue;
+            }
+
+            if c == b'-' || c == b'+' {
+                match number.pop() {
+                    Some(x) => {
+                        if x == 'e' || x == 'E' {
+                            number.push(x);
+                            number.push(c as char);
+                            continue;
+                        }
+                        number.push(x)
+                    },
+                    None => (),
+                }
+            }
+
             match number.parse::<f64>() {
                 Ok(parsed_float) => {
                     state.stack.push(parsed_float);
