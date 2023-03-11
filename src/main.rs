@@ -144,6 +144,18 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             },
 
             b'f' => state.print_stack(),
+            b'p' => {
+                match state.stack.last() {
+                    Some(top) => println!("{top}"),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+            b'n' => {
+                match state.stack.pop() {
+                    Some(top) => println!("{top}"),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
 
             b'q' => std::process::exit(0),
 
