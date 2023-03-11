@@ -3,9 +3,23 @@ struct ProgState {
     stack: Vec<f64>,
 }
 
-#[derive(Debug)]
+enum Errors {
+    A(ArithmeticErr),
+    P(ParserErr),
+    S(StackErr),
+}
+
 enum ArithmeticErr {
     DivideByZero,
+}
+
+enum ParserErr {
+    BadCharacter { c: char},
+    FloatParse,
+}
+
+enum StackErr {
+    FewElements,
 }
 
 impl ProgState {
@@ -22,12 +36,25 @@ impl ProgState {
         }
     }
 
+    fn print_error(&self, e: Errors) {
+        match e {
+            Errors::A(ArithmeticErr::DivideByZero) =>
+                eprintln!("{}: Arithmetic error: divide by zero", self.prog_name),
+            Errors::P(ParserErr::FloatParse) =>
+                eprintln!("{}: Parser error: cannot parse floating point number", self.prog_name),
+            Errors::P(ParserErr::BadCharacter { c }) =>
+                eprintln!("{}: Parser error: bad character '{c}'", self.prog_name),
+            Errors::S(StackErr::FewElements) =>
+                eprintln!("{}: Runtime error: stack has too few elements", self.prog_name),
+        }
+    }
+
     fn two_operands_op<F>(&mut self, f: F)
         where F: FnOnce(f64, f64) -> Result<f64, ArithmeticErr>
     {
         let len = self.stack.len();
         if len < 2 {
-            eprintln!("{} stack empty", self.prog_name);
+            self.print_error(Errors::S(StackErr::FewElements));
             return;
         }
         let a = self.stack[len - 2];
@@ -39,7 +66,7 @@ impl ProgState {
                 self.stack.pop();
                 self.stack.push(x);
             },
-            Err(ArithmeticErr::DivideByZero) => eprintln!("{} divide by zero", self.prog_name),
+            Err(_) => self.print_error(Errors::A(ArithmeticErr::DivideByZero)),
         }
     }
 }
@@ -80,7 +107,7 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                     state.stack.push(parsed_float);
                     number = String::new();
                 }
-                Err(e) => eprintln!("Cannot parse number: {e}"),
+                Err(_) => state.print_error(Errors::P(ParserErr::FloatParse)),
             };
             have_number_to_parse = false;
         }
@@ -109,14 +136,14 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             b'~' | b'_' => {
                 match state.stack.pop() {
                     Some(num) => state.stack.push(num * -1.0),
-                    None => eprintln!("stack is empty"),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
                 }
             },
 
             b'f' => state.print_stack(),
 
             b'q' => std::process::exit(0),
-            _ => continue,
+            _ => state.print_error(Errors::P(ParserErr::BadCharacter { c: c as char })),
         }
     }
 }
