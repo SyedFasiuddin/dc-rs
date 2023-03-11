@@ -135,6 +135,12 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }),
 
             b'^' => state.two_operands_op(|a, b| Ok(a.powf(b))),
+            b'v' => {
+                match state.stack.pop() {
+                    Some(num) => state.stack.push(num.sqrt()),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
 
             b'~' | b'_' => {
                 match state.stack.pop() {
@@ -142,6 +148,40 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                     None => state.print_error(Errors::S(StackErr::FewElements)),
                 }
             },
+
+            b'G' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+
+                if x == y {
+                    state.stack.push(1.0);
+                } else {
+                    state.stack.push(0.0);
+                }
+                continue;
+            },
+
+            b'N' => {
+                match state.stack.pop() {
+                    Some(num) => {
+                        if num == 0.0 {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    },
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'z' => state.stack.push(state.stack.len() as f64),
 
             b'f' => state.print_stack(),
             b'p' => {
