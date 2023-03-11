@@ -134,6 +134,27 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                     } else { Ok(a % b) }
                 }),
 
+            b'~' => {
+                // x y / x y %
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+
+                if y == 0.0 {
+                    state.print_error(Errors::A(ArithmeticErr::DivideByZero));
+                } else {
+                    state.stack.pop();
+                    state.stack.pop();
+                    state.stack.push(x / y);
+                    state.stack.push(x % y);
+                }
+                continue;
+            },
+
             b'^' => state.two_operands_op(|a, b| Ok(a.powf(b))),
             b'v' => {
                 match state.stack.pop() {
@@ -142,7 +163,20 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
-            b'~' | b'_' => {
+            b'b' => {
+                match state.stack.pop() {
+                    Some(num) => {
+                        if num == 0.0 {
+                            state.stack.push(num);
+                        } else {
+                            state.stack.push(num.abs());
+                        }
+                    },
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'_' => {
                 match state.stack.pop() {
                     Some(num) => state.stack.push(num * -1.0),
                     None => state.print_error(Errors::S(StackErr::FewElements)),
