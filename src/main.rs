@@ -7,6 +7,7 @@ enum Errors {
     A(ArithmeticErr),
     P(ParserErr),
     S(StackErr),
+    Unimplemented { c: char },
 }
 
 enum ArithmeticErr {
@@ -46,6 +47,8 @@ impl ProgState {
                 eprintln!("{}: Parser error: bad character '{c}'", self.prog_name),
             Errors::S(StackErr::FewElements) =>
                 eprintln!("{}: Runtime error: stack has too few elements", self.prog_name),
+            Errors::Unimplemented { c } =>
+                eprintln!("{}: '{c}' feature is not implemented", self.prog_name),
         }
     }
 
@@ -143,6 +146,13 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             b'f' => state.print_stack(),
 
             b'q' => std::process::exit(0),
+
+            b'P' | b'|' | b'$' | b'@' | b'H' | b'h' |
+            b'(' | b')' | b'{' | b'}' | b'M' | b'm' |
+           b'\'' | b'"' | b'c' | b'd' | b'r' | b'R' |
+            b's' | b'l' | b'S' | b'L' | b'Z' | b'X' =>
+                state.print_error(Errors::Unimplemented { c: c as char }),
+
             _ => state.print_error(Errors::P(ParserErr::BadCharacter { c: c as char })),
         }
     }
