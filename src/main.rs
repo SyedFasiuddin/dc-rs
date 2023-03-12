@@ -128,6 +128,22 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
 
             // b'A' ..= b'F' => println!("Hex Num: {c}"),
 
+            b'p' => {
+                match state.stack.last() {
+                    Some(top) => println!("{top}"),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'n' => {
+                match state.stack.pop() {
+                    Some(top) => println!("{top}"),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'f' => state.print_stack(),
+
             b'+' => state.two_operands_op(|a, b| Ok(a + b)),
             b'-' => state.two_operands_op(|a, b| Ok(a - b)),
             b'*' => state.two_operands_op(|a, b| Ok(a * b)),
@@ -159,22 +175,16 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
-            b'^' => state.two_operands_op(|a, b| Ok(a.powf(b))),
+            b'^' => {
+                state.two_operands_op(|top_minus_one, top| Ok(top_minus_one.powf(top)));
+                todo!("handle case where top is negative and top-1 is 0");
+            }
+
             b'v' => {
                 match state.stack.pop() {
-                    Some(num) => state.stack.push(num.sqrt()),
-                    None => state.print_error(Errors::S(StackErr::FewElements)),
-                }
-            },
-
-            b'b' => {
-                match state.stack.pop() {
                     Some(num) => {
-                        if num == 0.0 {
-                            state.stack.push(num);
-                        } else {
-                            state.stack.push(num.abs());
-                        }
+                        state.stack.push(num.sqrt());
+                        todo!("handle case where num is negative");
                     },
                     None => state.print_error(Errors::S(StackErr::FewElements)),
                 }
@@ -182,7 +192,30 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
 
             b'_' => {
                 match state.stack.pop() {
-                    Some(num) => state.stack.push(num * -1.0),
+                    Some(num) => {
+                        state.stack.push(num * -1.0);
+                        todo!("handle case where - is followed by number i.e. -12.3");
+                    },
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'b' => {
+                match state.stack.pop() {
+                    Some(top) => {
+                        if top == 0.0 {
+                            state.stack.push(top);
+                        } else {
+                            state.stack.push(top.abs());
+                        }
+                    },
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'$' => {
+                match state.stack.pop() {
+                    Some(top) => state.stack.push(top.trunc()),
                     None => state.print_error(Errors::S(StackErr::FewElements)),
                 }
             },
@@ -213,31 +246,6 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
-            b'z' => state.stack.push(state.stack.len() as f64),
-
-            b'f' => state.print_stack(),
-            b'p' => {
-                match state.stack.last() {
-                    Some(top) => println!("{top}"),
-                    None => state.print_error(Errors::S(StackErr::FewElements)),
-                }
-            },
-            b'n' => {
-                match state.stack.pop() {
-                    Some(top) => println!("{top}"),
-                    None => state.print_error(Errors::S(StackErr::FewElements)),
-                }
-            },
-
-            b'q' => std::process::exit(0),
-
-            b'$' => {
-                match state.stack.pop() {
-                    Some(top) => state.stack.push(top.trunc()),
-                    None => state.print_error(Errors::S(StackErr::FewElements)),
-                }
-            },
-
             b'(' => {
                 match state.get_top_two_elem() {
                     Some((top_minus_one, top)) => {
@@ -251,10 +259,10 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
-            b')' => {
+            b'{' => {
                 match state.get_top_two_elem() {
                     Some((top_minus_one, top)) => {
-                        if top > top_minus_one {
+                        if top <= top_minus_one {
                             state.stack.push(1.0);
                         } else {
                             state.stack.push(0.0);
@@ -264,10 +272,10 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
-            b'{' => {
+            b')' => {
                 match state.get_top_two_elem() {
                     Some((top_minus_one, top)) => {
-                        if top <= top_minus_one {
+                        if top > top_minus_one {
                             state.stack.push(1.0);
                         } else {
                             state.stack.push(0.0);
@@ -341,6 +349,9 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                     None => state.print_error(Errors::S(StackErr::FewElements)),
                 }
             },
+
+            b'z' => state.stack.push(state.stack.len() as f64),
+            b'q' => std::process::exit(0),
 
             b'P' | b'|' |        b'@' | b'H' | b'h' |
            b'\'' | b'"' |
