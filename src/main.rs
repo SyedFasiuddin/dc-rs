@@ -305,10 +305,67 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
     }
 }
 
+fn print_help() {
+    let help =
+        "dc-rs v0.1.0\n".to_owned()
+        + "Copyright (c) 2023 Syed Fasiuddin\n"
+        + "Report bugs at: https://github.com/SyedFasiuddin/dc-rs\n"
+        + "\n"
+        + "This is free software with ABSOLUTELY NO WARRANTY."
+        + "\n"
+        + "usage: dc-rs [options]\n"
+        + "\n"
+        + "dc is a reverse-polish notation command-line calculator which supports unlimited\n"
+        + "precision arithmetic. For details, use `man dc` or see the online documentation\n"
+        + "at https://git.yzena.com/gavin/bc/src/tag/4.0.2/manuals/bc/BUILD_TYPE.1.md.\n"
+        + "\n"
+        + "dc-rs is a variation of dc written in Rust.\n"
+        + "This version does not try to have one to one parity with every feature of dc(1).\n"
+        + "One most important variation is the scale, the original dc provides arbitrary\n"
+        + "precision calculation where as this version is limited by the limits that Rust\n"
+        + "has for its f64 floating point type i.e. 1.7976931348623157E+308f64 (max) and\n"
+        + "-1.7976931348623157E+308f64 (min)";
+
+    println!("{help}");
+    std::process::exit(0);
+}
+
+fn print_version() {
+    let ver =
+        "dc-rs v0.1.0\n".to_owned()
+        + "Copyright (c) 2023 Syed Fasiuddin\n"
+        + "Report bugs at: https://github.com/SyedFasiuddin/dc-rs\n"
+        + "\n"
+        + "This is free software with ABSOLUTELY NO WARRANTY.";
+
+    println!("{ver}");
+    std::process::exit(0);
+}
+
 fn main() {
+    let mut program_name = "dc-rs";
     let args: Vec<String> = std::env::args().collect();
+
+    if args.len() == 1 {
+        program_name = &args[0][..];
+    } else if args.len() == 2 {
+        program_name = &args[0][..];
+        match &args[1][..] {
+            "-h" | "--help" => print_help(),
+            "-v" | "--version" => print_version(),
+            &_ => {
+                eprintln!("{}: bad command line option: '{}'", program_name, &args[1][..]);
+                std::process::exit(1);
+            }
+        };
+    } else if args.len() > 2 {
+        eprintln!("Wrong usage");
+        print_help();
+        std::process::exit(1);
+    }
+
     let mut line_buf: String;
-    let mut state = ProgState::new(&args[0][..]);
+    let mut state = ProgState::new(program_name);
 
     loop {
         line_buf = "".to_string();

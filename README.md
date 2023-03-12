@@ -1,8 +1,25 @@
 dc-rs
 =====
 
-[Reverse polish notation:](https://en.wikipedia.org/wiki/Reverse_Polish_notation) TLDR: postfix
-form i.e. `3 + 4` is infix form or reverse polish form or postfix form it is written as `3 4 +`
+```
+dc-rs v0.1.0
+Copyright (c) 2023 Syed Fasiuddin
+Report bugs at: https://github.com/SyedFasiuddin/dc-rs
+
+This is free software with ABSOLUTELY NO WARRANTY.
+usage: dc-rs [options]
+
+dc is a reverse-polish notation command-line calculator which supports unlimited
+precision arithmetic. For details, use `man dc` or see the online documentation
+at https://git.yzena.com/gavin/bc/src/tag/4.0.2/manuals/bc/BUILD_TYPE.1.md.
+
+dc-rs is a variation of dc written in Rust.
+This version does not try to have one to one parity with every feature of dc(1).
+One most important variation is the scale, the original dc provides arbitrary
+precision calculation where as this version is limited by the limits that Rust
+has for its f64 floating point type i.e. 1.7976931348623157E+308f64 (max) and
+-1.7976931348623157E+308f64 (min)
+```
 
 Others:
 
