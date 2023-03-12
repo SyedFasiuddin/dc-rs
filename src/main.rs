@@ -233,19 +233,6 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
-            b'G' => {
-                match state.get_top_two_elem() {
-                    Some((top_minus_one, top)) => {
-                        if top_minus_one == top {
-                            state.stack.push(1.0);
-                        } else {
-                            state.stack.push(0.0);
-                        }
-                    },
-                    None => continue,
-                }
-            },
-
             b'N' => {
                 match state.stack.pop() {
                     Some(num) => {
@@ -259,6 +246,7 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
+            b'G' => state.top_two_compare(|top_minus_one, top| top == top_minus_one),
             b'(' => state.top_two_compare(|top_minus_one, top| top <  top_minus_one),
             b'{' => state.top_two_compare(|top_minus_one, top| top <= top_minus_one),
             b')' => state.top_two_compare(|top_minus_one, top| top >  top_minus_one),
