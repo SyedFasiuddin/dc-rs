@@ -233,9 +233,153 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
 
             b'q' => std::process::exit(0),
 
-            b'P' | b'|' | b'$' | b'@' | b'H' | b'h' |
-            b'(' | b')' | b'{' | b'}' | b'M' | b'm' |
-           b'\'' | b'"' | b'c' | b'd' | b'r' | b'R' |
+            b'$' => {
+                match state.stack.pop() {
+                    Some(top) => state.stack.push(top.trunc()),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'(' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+
+                if y < x {
+                    state.stack.push(1.0);
+                } else {
+                    state.stack.push(0.0);
+                }
+            },
+
+            b')' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+
+                if y > x {
+                    state.stack.push(1.0);
+                } else {
+                    state.stack.push(0.0);
+                }
+            },
+
+            b'{' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+
+                if y <= x {
+                    state.stack.push(1.0);
+                } else {
+                    state.stack.push(0.0);
+                }
+            },
+
+            b'}' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+
+                if y >= x {
+                    state.stack.push(1.0);
+                } else {
+                    state.stack.push(0.0);
+                }
+            },
+
+            b'M' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+
+                if x != 0.0 && y != 0.0 {
+                    state.stack.push(1.0);
+                } else {
+                    state.stack.push(0.0);
+                }
+            },
+
+            b'm' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+
+                if x != 0.0 || y != 0.0 {
+                    state.stack.push(1.0);
+                } else {
+                    state.stack.push(0.0);
+                }
+            },
+
+            b'c' => state.stack.clear(),
+
+            b'd' => {
+                match state.stack.last() {
+                    Some(top) => state.stack.push(*top),
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'r' => {
+                let len = state.stack.len();
+                if len < 2 {
+                    state.print_error(Errors::S(StackErr::FewElements));
+                    continue;
+                }
+                let x = state.stack[len - 2];
+                let y = state.stack[len - 1];
+                state.stack.pop();
+                state.stack.pop();
+                state.stack.push(y);
+                state.stack.push(x);
+            },
+
+            b'R' => {
+                match state.stack.pop() {
+                    Some(_) => continue,
+                    None => state.print_error(Errors::S(StackErr::FewElements)),
+                }
+            },
+
+            b'P' | b'|' |        b'@' | b'H' | b'h' |
+           b'\'' | b'"' |
             b's' | b'l' | b'S' | b'L' | b'Z' | b'X' =>
                 state.print_error(Errors::Unimplemented { c: c as char }),
 
