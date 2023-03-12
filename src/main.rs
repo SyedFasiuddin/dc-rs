@@ -52,25 +52,33 @@ impl ProgState {
         }
     }
 
-    fn two_operands_op<F>(&mut self, f: F)
-        where F: FnOnce(f64, f64) -> Result<f64, ArithmeticErr>
-    {
+    fn get_top_two_elem(&mut self) -> Option<(f64, f64)> {
         let len = self.stack.len();
         if len < 2 {
             self.print_error(Errors::S(StackErr::FewElements));
-            return;
+            return None;
         }
         let a = self.stack[len - 2];
         let b = self.stack[len - 1];
 
-        match f(a, b) {
-            Ok(x) => {
-                self.stack.pop();
-                self.stack.pop();
-                self.stack.push(x);
-            },
-            Err(_) => self.print_error(Errors::A(ArithmeticErr::DivideByZero)),
+        self.stack.pop();
+        self.stack.pop();
+
+        Some((a, b))
+    }
+
+    fn two_operands_op<F>(&mut self, f: F)
+        where F: FnOnce(f64, f64) -> Result<f64, ArithmeticErr>
+    {
+        match self.get_top_two_elem() {
+            Some((a, b)) =>
+                match f(a, b) {
+                    Ok(x) => self.stack.push(x),
+                    Err(_) => self.print_error(Errors::A(ArithmeticErr::DivideByZero)),
+                }
+            None => return,
         }
+
     }
 }
 
