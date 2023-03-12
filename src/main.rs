@@ -67,6 +67,19 @@ impl ProgState {
         Some((top_minus_one, top))
     }
 
+    fn top_two_compare(&mut self, f: impl Fn(f64, f64) -> bool) {
+        match self.get_top_two_elem() {
+            Some((top_minus_one, top)) => {
+                if f(top_minus_one, top) {
+                    self.stack.push(1.0);
+                } else {
+                    self.stack.push(0.0);
+                }
+            },
+            None => return,
+        }
+    }
+
     fn two_operands_op<F>(&mut self, f: F)
         where F: FnOnce(f64, f64) -> Result<f64, ArithmeticErr>
     {
@@ -246,83 +259,12 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
                 }
             },
 
-            b'(' => {
-                match state.get_top_two_elem() {
-                    Some((top_minus_one, top)) => {
-                        if top < top_minus_one {
-                            state.stack.push(1.0);
-                        } else {
-                            state.stack.push(0.0);
-                        }
-                    },
-                    None => continue,
-                }
-            },
-
-            b'{' => {
-                match state.get_top_two_elem() {
-                    Some((top_minus_one, top)) => {
-                        if top <= top_minus_one {
-                            state.stack.push(1.0);
-                        } else {
-                            state.stack.push(0.0);
-                        }
-                    }
-                    None => continue,
-                }
-            },
-
-            b')' => {
-                match state.get_top_two_elem() {
-                    Some((top_minus_one, top)) => {
-                        if top > top_minus_one {
-                            state.stack.push(1.0);
-                        } else {
-                            state.stack.push(0.0);
-                        }
-                    }
-                    None => continue,
-                }
-            },
-
-            b'}' => {
-                match state.get_top_two_elem() {
-                    Some((top_minus_one, top)) => {
-                        if top >= top_minus_one {
-                            state.stack.push(1.0);
-                        } else {
-                            state.stack.push(0.0);
-                        }
-                    }
-                    None => continue,
-                }
-            },
-
-            b'M' => {
-                match state.get_top_two_elem() {
-                    Some((top_minus_one, top)) => {
-                        if top_minus_one != 0.0 && top != 0.0 {
-                            state.stack.push(1.0);
-                        } else {
-                            state.stack.push(0.0);
-                        }
-                    }
-                    None => continue,
-                }
-            },
-
-            b'm' => {
-                match state.get_top_two_elem() {
-                    Some((top_minus_one, top)) => {
-                        if top_minus_one != 0.0 || top != 0.0 {
-                            state.stack.push(1.0);
-                        } else {
-                            state.stack.push(0.0);
-                        }
-                    }
-                    None => continue,
-                }
-            },
+            b'(' => state.top_two_compare(|top_minus_one, top| top <  top_minus_one),
+            b'{' => state.top_two_compare(|top_minus_one, top| top <= top_minus_one),
+            b')' => state.top_two_compare(|top_minus_one, top| top >  top_minus_one),
+            b'}' => state.top_two_compare(|top_minus_one, top| top >= top_minus_one),
+            b'M' => state.top_two_compare(|top_minus_one, top| top != 0.0 && top_minus_one != 0.0),
+            b'm' => state.top_two_compare(|top_minus_one, top| top != 0.0 || top_minus_one != 0.0),
 
             b'c' => state.stack.clear(),
 
