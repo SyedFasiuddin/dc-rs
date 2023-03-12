@@ -84,8 +84,8 @@ impl ProgState {
         where F: FnOnce(f64, f64) -> Result<f64, ArithmeticErr>
     {
         match self.get_top_two_elem() {
-            Some((top_minux_one, top)) =>
-                match f(top_minux_one, top) {
+            Some((top_minus_one, top)) =>
+                match f(top_minus_one, top) {
                     Ok(x) => self.stack.push(x),
                     Err(_) => self.print_error(Errors::A(ArithmeticErr::DivideByZero)),
                 }
