@@ -58,21 +58,21 @@ impl ProgState {
             self.print_error(Errors::S(StackErr::FewElements));
             return None;
         }
-        let a = self.stack[len - 2];
-        let b = self.stack[len - 1];
+        let top_minus_one = self.stack[len - 2];
+        let top = self.stack[len - 1];
 
         self.stack.pop();
         self.stack.pop();
 
-        Some((a, b))
+        Some((top_minus_one, top))
     }
 
     fn two_operands_op<F>(&mut self, f: F)
         where F: FnOnce(f64, f64) -> Result<f64, ArithmeticErr>
     {
         match self.get_top_two_elem() {
-            Some((a, b)) =>
-                match f(a, b) {
+            Some((top_minux_one, top)) =>
+                match f(top_minux_one, top) {
                     Ok(x) => self.stack.push(x),
                     Err(_) => self.print_error(Errors::A(ArithmeticErr::DivideByZero)),
                 }
@@ -131,36 +131,32 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             b'+' => state.two_operands_op(|a, b| Ok(a + b)),
             b'-' => state.two_operands_op(|a, b| Ok(a - b)),
             b'*' => state.two_operands_op(|a, b| Ok(a * b)),
-            b'/' => state.two_operands_op(|a, b| {
-                    if b == 0.0 {
+            b'/' => state.two_operands_op(|top_minus_one, top| {
+                    if top == 0.0 {
                         Err(ArithmeticErr::DivideByZero)
-                    } else { Ok(a / b) }
+                    } else { Ok(top_minus_one / top) }
                 }),
-            b'%' => state.two_operands_op(|a, b| {
-                    if b == 0.0 {
+            b'%' => state.two_operands_op(|top_minus_one, top| {
+                    if top == 0.0 {
                         Err(ArithmeticErr::DivideByZero)
-                    } else { Ok(a % b) }
+                    } else { Ok(top_minus_one % top) }
                 }),
 
             b'~' => {
                 // x y / x y %
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top == 0.0 {
+                            state.stack.push(top_minus_one);
+                            state.stack.push(top);
+                            state.print_error(Errors::A(ArithmeticErr::DivideByZero));
+                        } else {
+                            state.stack.push(top_minus_one / top);
+                            state.stack.push(top_minus_one % top);
+                        }
+                    },
+                    None => continue,
                 }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-
-                if y == 0.0 {
-                    state.print_error(Errors::A(ArithmeticErr::DivideByZero));
-                } else {
-                    state.stack.pop();
-                    state.stack.pop();
-                    state.stack.push(x / y);
-                    state.stack.push(x % y);
-                }
-                continue;
             },
 
             b'^' => state.two_operands_op(|a, b| Ok(a.powf(b))),
@@ -192,22 +188,16 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             },
 
             b'G' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top_minus_one == top {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    },
+                    None => continue,
                 }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-
-                if x == y {
-                    state.stack.push(1.0);
-                } else {
-                    state.stack.push(0.0);
-                }
-                continue;
             },
 
             b'N' => {
@@ -249,110 +239,80 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             },
 
             b'(' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
-                }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-
-                if y < x {
-                    state.stack.push(1.0);
-                } else {
-                    state.stack.push(0.0);
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top < top_minus_one {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    },
+                    None => continue,
                 }
             },
 
             b')' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
-                }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-
-                if y > x {
-                    state.stack.push(1.0);
-                } else {
-                    state.stack.push(0.0);
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top > top_minus_one {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    }
+                    None => continue,
                 }
             },
 
             b'{' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
-                }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-
-                if y <= x {
-                    state.stack.push(1.0);
-                } else {
-                    state.stack.push(0.0);
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top <= top_minus_one {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    }
+                    None => continue,
                 }
             },
 
             b'}' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
-                }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-
-                if y >= x {
-                    state.stack.push(1.0);
-                } else {
-                    state.stack.push(0.0);
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top >= top_minus_one {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    }
+                    None => continue,
                 }
             },
 
             b'M' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
-                }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-
-                if x != 0.0 && y != 0.0 {
-                    state.stack.push(1.0);
-                } else {
-                    state.stack.push(0.0);
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top_minus_one != 0.0 && top != 0.0 {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    }
+                    None => continue,
                 }
             },
 
             b'm' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
-                }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-
-                if x != 0.0 || y != 0.0 {
-                    state.stack.push(1.0);
-                } else {
-                    state.stack.push(0.0);
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        if top_minus_one != 0.0 || top != 0.0 {
+                            state.stack.push(1.0);
+                        } else {
+                            state.stack.push(0.0);
+                        }
+                    }
+                    None => continue,
                 }
             },
 
@@ -366,17 +326,13 @@ fn tokenize_line(s: &str, state: &mut ProgState) {
             },
 
             b'r' => {
-                let len = state.stack.len();
-                if len < 2 {
-                    state.print_error(Errors::S(StackErr::FewElements));
-                    continue;
+                match state.get_top_two_elem() {
+                    Some((top_minus_one, top)) => {
+                        state.stack.push(top);
+                        state.stack.push(top_minus_one);
+                    },
+                    None => continue,
                 }
-                let x = state.stack[len - 2];
-                let y = state.stack[len - 1];
-                state.stack.pop();
-                state.stack.pop();
-                state.stack.push(y);
-                state.stack.push(x);
             },
 
             b'R' => {
